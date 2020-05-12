@@ -33,6 +33,112 @@ See the classroom instruction and code comments for more details on each of thes
 3. Compile: `cmake .. && make`
 4. Run it: `./2D_feature_tracking`.
 
+## Rubric
+
+1. MP.1
+
+Implement a ring buffer using deque:
+```
+deque<DataFrame> dataBuffer;
+```
+```
+dataBuffer.push_back(frame);
+                if (dataBuffer.size() > dataBufferSize) {
+                    dataBuffer.pop_front();
+                }
+```
+
+2. MP.2 + MP. 4
+
+This is done in MidTermProject_Camera_Student.cpp line 52 ~ 65.
+```
+vector<string> detectorTypes{ "SHITOMASI", "HARRIS", "FAST", "BRISK", "ORB", "AKAZE", "SIFT" };
+    vector<string> descriptorTypes{ "BRISK", "BRIEF", "ORB", "FREAK", "AKAZE", "SIFT" };
+    for (auto i = detectorTypes.begin(); i != detectorTypes.end(); i++) {
+        for (auto j = descriptorTypes.begin(); j != descriptorTypes.end(); j++) {
+            string detectorType = *i;
+            string descriptorType = *j;
+            //Akaze descriptor can work only with akaze point
+            if(detectorType.compare("AKAZE") != 0 && descriptorType.compare("AKAZE") == 0)
+                continue;
+            if(detectorType.compare("SIFT") == 0 && descriptorType.compare("ORB") == 0)
+```
+  
+3. MP.3
+
+This is done using cv::rect::contain instruction in MidTermProject_Camera_Student.cpp in line 145 ~ 154. 
+```
+vector<cv::KeyPoint> temp;
+                if (bFocusOnVehicle)
+                {
+                    for (auto it = keypoints.begin(); it != keypoints.end(); it++) {
+                        if (vehicleRect.contains(it->pt)) {
+                            temp.emplace_back(*it);
+                        }
+                    }
+                }
+                keypoints  = temp;
+```
+
+5. MP.5 + MP.6
+
+This is done in file matching2D_Student.cpp in function matchDescriptors.
+
+```
+void matchDescriptors(std::vector<cv::KeyPoint> &kPtsSource, std::vector<cv::KeyPoint> &kPtsRef, cv::Mat &descSource, cv::Mat &descRef,
+                      std::vector<cv::DMatch> &matches, std::string descriptorType, std::string matcherType, std::string selectorType)
+{
+    // configure matcher
+    bool crossCheck = false;
+    cv::Ptr<cv::DescriptorMatcher> matcher;
+
+    if (matcherType.compare("MAT_BF") == 0)
+    {    
+        int normType;
+        if (descriptorType.compare("SIFT") == 0)
+        {
+            normType = cv::NORM_L2;
+        }
+        else{
+            // std::cout << "test" << std::endl;
+            normType = cv::NORM_HAMMING;
+        }
+        
+        matcher = cv::BFMatcher::create(normType, false);
+    }
+    else if (matcherType.compare("MAT_FLANN") == 0)
+    {
+        if (descSource.type() != CV_32F) {
+            descSource.convertTo(descSource, CV_32F);
+            descRef.convertTo(descRef, CV_32F);
+        }
+        matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
+    }
+    
+    // perform matching task
+    if (selectorType.compare("SEL_NN") == 0)
+    { // nearest neighbor (best match)
+
+        matcher->match(descSource, descRef, matches); // Finds the best match for each descriptor in desc1
+    }
+    else if (selectorType.compare("SEL_KNN") == 0)
+    { // k nearest neighbors (k=2)
+        int k = 2;
+        float ratio = 0.8;
+        std::vector<std::vector<cv::DMatch>> knn_matches;
+
+        matcher->knnMatch(descSource, descRef, knn_matches, k);
+
+        for (size_t i = 0; i < knn_matches.size(); i++) {
+            if (knn_matches[i][0].distance < ratio * knn_matches[i][1].distance) {
+                matches.emplace_back(knn_matches[i][0]);
+            }
+        }
+
+    }
+}
+```
+
 ## Evaluation
 
 Exploring all the possible combinations of detector and descriptor (AKAZE descriptor only works with AKAZE_Point, SIFT doesn't work with ORB), the results are concluded in the following. 
